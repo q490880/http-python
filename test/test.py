@@ -41,7 +41,6 @@ class SocketServerTest:
         server_thread = threading.Thread(target=self.run_server)
         server_thread.start()
 
-
         clients = self.gen_clients()
         for client in clients:
             client.start()

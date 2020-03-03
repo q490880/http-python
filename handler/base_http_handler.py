@@ -1,6 +1,7 @@
 # encoding=utf-8
 from handler.base_handler import StreamRequestHandler
 import logging
+from util import date_time_string
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(filenae)s[line:$(lineni)d] - %(levelname)s: %(nessage)s')
 
@@ -64,18 +65,20 @@ class BaseHTTPRequestHandler(StreamRequestHandler):
 
     # 写入应答头
     def write_header(self, key, value):
-        msg = '%s: %s' % (key, value)
+        msg = '%s: %s \r\n' % (key, value)
         self.write_content(msg)
 
     default_http_version = 'HTTP/1.1'
 
     # 写入正常HTTP应答的头部
-    def write_response(self, code, msg):
+    def write_response(self, code, msg = None):
+        if msg == None:
+            msg = self.responses[code][0]
         # 状态行
-        response_line = '%s %d %s' % (self.default_http_version, code, msg)
+        response_line = '%s %d %s \r\n' % (self.default_http_version, code, msg)
         self.write_content(response_line)
-        self.write_content('Server', '')
-        self.write_content('Date', '')
+        self.write_header('Server', '%s: %s' % (self.server.server_name, self.server.version))
+        self.write_header('Date', date_time_string())
 
     DEFAULT_ERROR_MESSAGE_TEMPLATE = r'''
     <head>
@@ -156,7 +159,7 @@ class BaseHTTPRequestHandler(StreamRequestHandler):
     }
 
     # 写入错误HTTP请求结果
-    def write_error(self, code, msg):
+    def write_error(self, code, msg = None):
         s_msg, l_msg = self.responses[code]
         if msg:
             s_msg = msg
@@ -167,7 +170,9 @@ class BaseHTTPRequestHandler(StreamRequestHandler):
         }
 
         self.write_response(code, s_msg)
+        self.end_header()
         self.write_content(response_content)
+        self.send()
 
     def end_header(self):
         self.write_content('\r\n')
